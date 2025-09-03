@@ -85,7 +85,7 @@ where
         Box::pin(async move {
             let mut framed = Framed::new(
                 socket,
-                quick_protobuf_codec::Codec::<proto::RPC>::new(MAX_MESSAGE_LEN_BYTES),
+                quick_protobuf_codec::Codec::<proto::RPC>::new(self.max_message_len_bytes),
             );
 
             let rpc = framed
