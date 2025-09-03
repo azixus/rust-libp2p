@@ -98,8 +98,9 @@ impl Floodsub {
 
     /// Set a custom maximum message length.
     /// By default, it is set to [`MAX_MESSAGE_LEN_BYTES`].
-    pub fn set_max_message_len(&mut self, max_message_len_bytes: usize) {
+    pub fn with_max_message_len(mut self, max_message_len_bytes: usize) -> Self {
         self.max_message_len_bytes = max_message_len_bytes;
+        self
     }
 
     /// Add a node to the list of nodes to propagate messages to.
