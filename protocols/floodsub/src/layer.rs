@@ -377,7 +377,13 @@ impl NetworkBehaviour for Floodsub {
         _: Endpoint,
         _: PortUse,
     ) -> Result<THandler<Self>, ConnectionDenied> {
-        Ok(Default::default())
+        Ok(OneShotHandler::new(
+            SubstreamProtocol::new(
+                FloodsubProtocol::default().with_max_message_len(self.max_message_len_bytes),
+                (),
+            ),
+            OneShotHandlerConfig::default(),
+        ))
     }
 
     fn on_connection_handler_event(
