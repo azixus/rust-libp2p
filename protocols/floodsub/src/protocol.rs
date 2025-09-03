@@ -32,7 +32,7 @@ use libp2p_swarm::StreamProtocol;
 
 use crate::{proto, topic::Topic};
 
-const MAX_MESSAGE_LEN_BYTES: usize = 2048;
+const MAX_MESSAGE_LEN_BYTES: usize = 4196;
 
 const PROTOCOL_NAME: StreamProtocol = StreamProtocol::new("/floodsub/1.0.0");
 
