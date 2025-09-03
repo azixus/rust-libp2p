@@ -32,18 +32,35 @@ use libp2p_swarm::StreamProtocol;
 
 use crate::{proto, topic::Topic};
 
-const MAX_MESSAGE_LEN_BYTES: usize = 4196;
+pub(crate) const MAX_MESSAGE_LEN_BYTES: usize = 2048;
 
 const PROTOCOL_NAME: StreamProtocol = StreamProtocol::new("/floodsub/1.0.0");
 
 /// Implementation of `ConnectionUpgrade` for the floodsub protocol.
-#[derive(Debug, Clone, Default)]
-pub struct FloodsubProtocol {}
+#[derive(Debug, Clone)]
+pub struct FloodsubProtocol {
+    /// The maximum message length in bytes.
+    max_message_len_bytes: usize,
+}
 
 impl FloodsubProtocol {
     /// Builds a new `FloodsubProtocol`.
     pub fn new() -> FloodsubProtocol {
-        FloodsubProtocol {}
+        Default::default()
+    }
+
+    /// Sets the maximum message length in bytes
+    pub fn with_max_message_len(mut self, max_message_len_bytes: usize) -> Self {
+        self.max_message_len_bytes = max_message_len_bytes;
+        self
+    }
+}
+
+impl Default for FloodsubProtocol {
+    fn default() -> Self {
+        Self {
+            max_message_len_bytes: MAX_MESSAGE_LEN_BYTES,
+        }
     }
 }
 

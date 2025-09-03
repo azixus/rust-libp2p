@@ -36,14 +36,15 @@ use libp2p_swarm::{
     behaviour::{ConnectionClosed, ConnectionEstablished, FromSwarm},
     dial_opts::DialOpts,
     CloseConnection, ConnectionDenied, ConnectionId, NetworkBehaviour, NotifyHandler,
-    OneShotHandler, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    OneShotHandler, OneShotHandlerConfig, SubstreamProtocol, THandler, THandlerInEvent,
+    THandlerOutEvent, ToSwarm,
 };
 use smallvec::SmallVec;
 
 use crate::{
     protocol::{
         FloodsubMessage, FloodsubProtocol, FloodsubRpc, FloodsubSubscription,
-        FloodsubSubscriptionAction,
+        FloodsubSubscriptionAction, MAX_MESSAGE_LEN_BYTES,
     },
     topic::Topic,
     FloodsubConfig,
@@ -71,6 +72,9 @@ pub struct Floodsub {
     // We keep track of the messages we received (in the format `hash(source ID, seq_no)`) so that
     // we don't dispatch the same message twice if we receive it twice on the network.
     received: CuckooFilter<DefaultHasher>,
+
+    /// The maximum length of the messages that can be decoded with floodsub.
+    max_message_len_bytes: usize,
 }
 
 impl Floodsub {
@@ -88,7 +92,14 @@ impl Floodsub {
             connected_peers: HashMap::new(),
             subscribed_topics: SmallVec::new(),
             received: CuckooFilter::new(),
+            max_message_len_bytes: MAX_MESSAGE_LEN_BYTES,
         }
+    }
+
+    /// Set a custom maximum message length.
+    /// By default, it is set to [`MAX_MESSAGE_LEN_BYTES`].
+    pub fn set_max_message_len(&mut self, max_message_len_bytes: usize) {
+        self.max_message_len_bytes = max_message_len_bytes;
     }
 
     /// Add a node to the list of nodes to propagate messages to.
@@ -348,7 +359,13 @@ impl NetworkBehaviour for Floodsub {
         _: &Multiaddr,
         _: &Multiaddr,
     ) -> Result<THandler<Self>, ConnectionDenied> {
-        Ok(Default::default())
+        Ok(OneShotHandler::new(
+            SubstreamProtocol::new(
+                FloodsubProtocol::default().with_max_message_len(self.max_message_len_bytes),
+                (),
+            ),
+            OneShotHandlerConfig::default(),
+        ))
     }
 
     fn handle_established_outbound_connection(
