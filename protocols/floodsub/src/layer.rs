@@ -36,7 +36,7 @@ use libp2p_swarm::{
     behaviour::{ConnectionClosed, ConnectionEstablished, FromSwarm},
     dial_opts::DialOpts,
     CloseConnection, ConnectionDenied, ConnectionId, NetworkBehaviour, NotifyHandler,
-    OneShotHandler, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
+    OneShotHandler, SubstreamProtocol, THandler, THandlerInEvent, THandlerOutEvent, ToSwarm,
 };
 use smallvec::SmallVec;
 
@@ -109,6 +109,7 @@ impl Behaviour {
                             topic,
                             action: FloodsubSubscriptionAction::Subscribe,
                         }],
+                        max_transmit_size: self.config.max_transmit_size,
                     },
                 });
             }
@@ -145,6 +146,7 @@ impl Behaviour {
                         topic: topic.clone(),
                         action: FloodsubSubscriptionAction::Subscribe,
                     }],
+                    max_transmit_size: self.config.max_transmit_size,
                 },
             });
         }
@@ -175,6 +177,7 @@ impl Behaviour {
                         topic: topic.clone(),
                         action: FloodsubSubscriptionAction::Unsubscribe,
                     }],
+                    max_transmit_size: self.config.max_transmit_size,
                 },
             });
         }
@@ -274,6 +277,7 @@ impl Behaviour {
                 event: FloodsubRpc {
                     subscriptions: Vec::new(),
                     messages: vec![message.clone()],
+                    max_transmit_size: self.config.max_transmit_size,
                 },
             });
         }
@@ -304,6 +308,7 @@ impl Behaviour {
                             topic,
                             action: FloodsubSubscriptionAction::Subscribe,
                         }],
+                        max_transmit_size: self.config.max_transmit_size,
                     },
                 });
             }
@@ -349,7 +354,15 @@ impl NetworkBehaviour for Behaviour {
         _: &Multiaddr,
         _: &Multiaddr,
     ) -> Result<THandler<Self>, ConnectionDenied> {
-        Ok(Default::default())
+        Ok(OneShotHandler::new(
+            SubstreamProtocol::new(
+                FloodsubProtocol {
+                    max_transmit_size: self.config.max_transmit_size,
+                },
+                (),
+            ),
+            Default::default(),
+        ))
     }
 
     fn handle_established_outbound_connection(
@@ -360,7 +373,15 @@ impl NetworkBehaviour for Behaviour {
         _: Endpoint,
         _: PortUse,
     ) -> Result<THandler<Self>, ConnectionDenied> {
-        Ok(Default::default())
+        Ok(OneShotHandler::new(
+            SubstreamProtocol::new(
+                FloodsubProtocol {
+                    max_transmit_size: self.config.max_transmit_size,
+                },
+                (),
+            ),
+            Default::default(),
+        ))
     }
 
     fn on_connection_handler_event(
@@ -471,6 +492,7 @@ impl NetworkBehaviour for Behaviour {
                         FloodsubRpc {
                             subscriptions: Vec::new(),
                             messages: vec![message.clone()],
+                            max_transmit_size: self.config.max_transmit_size,
                         },
                     ));
                 }

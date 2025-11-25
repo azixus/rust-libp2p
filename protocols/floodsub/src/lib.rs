@@ -43,6 +43,8 @@ pub use self::{
     topic::Topic,
 };
 
+pub(crate) const MAX_MESSAGE_LEN_BYTES: usize = 2048;
+
 #[deprecated = "Use `Config` instead."]
 pub type FloodsubConfig = Config;
 
@@ -55,6 +57,9 @@ pub struct Config {
     /// `true` if messages published by local node should be propagated as messages received from
     /// the network, `false` by default.
     pub subscribe_local_messages: bool,
+
+    /// The maximum transmit size of a floodsub packet (default is 2048 bytes).
+    pub max_transmit_size: usize,
 }
 
 impl Config {
@@ -62,6 +67,7 @@ impl Config {
         Self {
             local_peer_id,
             subscribe_local_messages: false,
+            max_transmit_size: MAX_MESSAGE_LEN_BYTES,
         }
     }
 }

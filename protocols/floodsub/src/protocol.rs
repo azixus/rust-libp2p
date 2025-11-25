@@ -30,20 +30,29 @@ use libp2p_core::{InboundUpgrade, OutboundUpgrade, UpgradeInfo};
 use libp2p_identity::PeerId;
 use libp2p_swarm::StreamProtocol;
 
-use crate::{proto, topic::Topic};
-
-const MAX_MESSAGE_LEN_BYTES: usize = 2048;
+use crate::{proto, topic::Topic, MAX_MESSAGE_LEN_BYTES};
 
 const PROTOCOL_NAME: StreamProtocol = StreamProtocol::new("/floodsub/1.0.0");
 
 /// Implementation of `ConnectionUpgrade` for the floodsub protocol.
-#[derive(Debug, Clone, Default)]
-pub struct FloodsubProtocol {}
+#[derive(Debug, Clone)]
+pub struct FloodsubProtocol {
+    /// The max transmit size.
+    pub(crate) max_transmit_size: usize,
+}
+
+impl Default for FloodsubProtocol {
+    fn default() -> Self {
+        Self {
+            max_transmit_size: MAX_MESSAGE_LEN_BYTES,
+        }
+    }
+}
 
 impl FloodsubProtocol {
     /// Builds a new `FloodsubProtocol`.
     pub fn new() -> FloodsubProtocol {
-        FloodsubProtocol {}
+        FloodsubProtocol::default()
     }
 }
 
@@ -68,7 +77,7 @@ where
         Box::pin(async move {
             let mut framed = Framed::new(
                 socket,
-                quick_protobuf_codec::Codec::<proto::RPC>::new(MAX_MESSAGE_LEN_BYTES),
+                quick_protobuf_codec::Codec::<proto::RPC>::new(self.max_transmit_size),
             );
 
             let rpc = framed
@@ -132,6 +141,8 @@ pub struct FloodsubRpc {
     pub messages: Vec<FloodsubMessage>,
     /// List of subscriptions.
     pub subscriptions: Vec<FloodsubSubscription>,
+    /// The max transmit size.
+    pub max_transmit_size: usize,
 }
 
 impl UpgradeInfo for FloodsubRpc {
@@ -155,7 +166,7 @@ where
         Box::pin(async move {
             let mut framed = Framed::new(
                 socket,
-                quick_protobuf_codec::Codec::<proto::RPC>::new(MAX_MESSAGE_LEN_BYTES),
+                quick_protobuf_codec::Codec::<proto::RPC>::new(self.max_transmit_size),
             );
             framed.send(self.into_rpc()).await?;
             framed.close().await?;
